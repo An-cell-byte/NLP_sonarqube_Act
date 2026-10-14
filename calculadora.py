@@ -1,33 +1,42 @@
 import math
 
+SUMA = "suma"
+RESTA = "resta"
+MULTIPLICACION = "multiplicación"
+DIVISION = "división"
+PROMEDIO = "promedio"
+POTENCIA = "potencia"
+MAYOR_Y_MENOR = "mayor y menor"
+
 OPERACIONES = {
-    "1": "suma",
-    "2": "resta",
-    "3": "multiplicación",
-    "4": "división",
-    "5": "promedio",
-    "6": "potencia",
-    "7": "mayor y menor",
+    "1": SUMA,
+    "2": RESTA,
+    "3": MULTIPLICACION,
+    "4": DIVISION,
+    "5": PROMEDIO,
+    "6": POTENCIA,
+    "7": MAYOR_Y_MENOR,
 }
 
 # Operaciones que usan dos números y el orden en que se aplican.
 ORDEN = {
-    "resta": "primero menos segundo",
-    "división": "primero entre segundo",
-    "potencia": "primero elevado al segundo",
+    RESTA: "primero menos segundo",
+    DIVISION: "primero entre segundo",
+    POTENCIA: "primero elevado al segundo",
 }
 
 # Nombres alternativos sin acentos, útiles al usar la API.
 SINONIMOS = {
-    "multiplicacion": "multiplicación",
-    "division": "división",
-    "mayor_y_menor": "mayor y menor",
+    "multiplicacion": MULTIPLICACION,
+    "division": DIVISION,
+    "mayor_y_menor": MAYOR_Y_MENOR,
 }
+
+MENSAJE_SALIDA = "Programa terminado."
 
 
 # CLASE
 class Calculadora:
-
     def __init__(self, operacion, numeros):
         self.operacion = SINONIMOS.get(operacion, operacion)
         self.numeros = numeros
@@ -60,7 +69,7 @@ class Calculadora:
         return max(self.numeros), min(self.numeros)
 
     def validar(self):
-        if self.operacion not in ORDEN and self.operacion not in OPERACIONES.values():
+        if self.operacion not in OPERACIONES.values():
             raise ValueError(f"Operación no válida: {self.operacion}.")
         if not isinstance(self.numeros, (list, tuple)) or not self.numeros:
             raise ValueError("Debes indicar al menos un número.")
@@ -75,13 +84,13 @@ class Calculadora:
     def resultado(self):
         self.validar()
         metodos = {
-            "suma": self.suma,
-            "resta": self.resta,
-            "multiplicación": self.multiplicacion,
-            "división": self.division,
-            "promedio": self.promedio,
-            "potencia": self.potencia,
-            "mayor y menor": self.mayor_y_menor,
+            SUMA: self.suma,
+            RESTA: self.resta,
+            MULTIPLICACION: self.multiplicacion,
+            DIVISION: self.division,
+            PROMEDIO: self.promedio,
+            POTENCIA: self.potencia,
+            MAYOR_Y_MENOR: self.mayor_y_menor,
         }
         respuesta = metodos[self.operacion]()
         if not isinstance(respuesta, tuple) and not math.isfinite(respuesta):
@@ -143,27 +152,34 @@ def realizar_operacion(operacion):
     except (ZeroDivisionError, ValueError) as error:
         print("Error:", error)
         return
-    if operacion == "mayor y menor":
+    if operacion == MAYOR_Y_MENOR:
         print("Resultado: mayor =", formato(respuesta[0]), "y menor =", formato(respuesta[1]))
     else:
         print("Resultado:", formato(respuesta))
 
 
+def atender_opcion(opcion):
+    """Ejecuta la opción elegida y devuelve False cuando el usuario quiere salir."""
+    if opcion == "0":
+        print(MENSAJE_SALIDA)
+        return False
+    if opcion not in OPERACIONES:
+        print("Opción no válida. Elige un número del menú.")
+    else:
+        realizar_operacion(OPERACIONES[opcion])
+    return True
+
+
 def main():
-    while True:
+    continuar = True
+    while continuar:
         mostrar_menu()
         try:
-            opcion = input("Elige una opción: ").strip()
-            if opcion == "0":
-                print("Programa terminado.")
-                break
-            if opcion not in OPERACIONES:
-                print("Opción no válida. Elige un número del menú.")
-                continue
-            realizar_operacion(OPERACIONES[opcion])
-        except (EOFError, KeyboardInterrupt):
-            print("\nPrograma terminado.")
-            break
+            continuar = atender_opcion(input("Elige una opción: ").strip())
+        except EOFError:
+            # La entrada se cerró (por ejemplo, Ctrl+Z o Ctrl+D): se termina sin error.
+            print("\n" + MENSAJE_SALIDA)
+            continuar = False
 
 
 if __name__ == "__main__":

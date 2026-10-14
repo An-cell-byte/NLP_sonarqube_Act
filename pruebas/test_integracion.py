@@ -5,16 +5,22 @@ import pytest
 from fastapi.testclient import TestClient
 
 from api import app
-from calculadora import main
+from calculadora import MENSAJE_SALIDA, main
 
 cliente = TestClient(app)
+RUTA_CALCULAR = "/calcular"
+
+
+def calcular(operacion, numeros):
+    """Envía una operación a la API y devuelve la respuesta."""
+    return cliente.post(RUTA_CALCULAR, json={"operacion": operacion, "numeros": numeros})
 
 
 def simular_entradas(monkeypatch, respuestas):
     """Hace que input() devuelva las respuestas en orden, como si las escribiera el usuario."""
     respuestas = iter(respuestas)
 
-    def entrada_falsa(mensaje=""):
+    def entrada_falsa(_mensaje=""):
         try:
             return next(respuestas)
         except StopIteration:
@@ -25,12 +31,13 @@ def simular_entradas(monkeypatch, respuestas):
 
 # Recorridos por el menú.
 
+
 def test_menu_calcula_suma(monkeypatch, capsys):
     simular_entradas(monkeypatch, ["1", "2", "2", "3", "0"])
     main()
     salida = capsys.readouterr().out
     assert "Resultado: 5" in salida
-    assert "Programa terminado." in salida
+    assert MENSAJE_SALIDA in salida
 
 
 def test_menu_calcula_promedio_con_coma_decimal(monkeypatch, capsys):
@@ -60,7 +67,7 @@ def test_menu_permite_continuar_y_salir(monkeypatch, capsys):
     assert "Resultado: 20" in salida
     assert "Resultado: 8" in salida
     assert salida.count("===== CALCULADORA =====") == 3
-    assert salida.strip().endswith("Programa terminado.")
+    assert salida.strip().endswith(MENSAJE_SALIDA)
 
 
 def test_menu_sale_inmediatamente(monkeypatch, capsys):
@@ -68,10 +75,11 @@ def test_menu_sale_inmediatamente(monkeypatch, capsys):
     main()
     salida = capsys.readouterr().out
     assert "Resultado" not in salida
-    assert "Programa terminado." in salida
+    assert MENSAJE_SALIDA in salida
 
 
 # Entradas incorrectas: el programa avisa y continúa.
+
 
 def test_menu_opcion_no_valida(monkeypatch, capsys):
     simular_entradas(monkeypatch, ["9", "abc", "1", "1", "4", "0"])
@@ -115,17 +123,18 @@ def test_menu_potencia_no_calculable(monkeypatch, capsys):
 def test_menu_termina_si_se_cierra_la_entrada(monkeypatch, capsys):
     simular_entradas(monkeypatch, ["1"])
     main()
-    assert "Programa terminado." in capsys.readouterr().out
+    assert MENSAJE_SALIDA in capsys.readouterr().out
 
 
 def test_ejecutar_como_programa(monkeypatch, capsys):
     simular_entradas(monkeypatch, ["0"])
     ruta = Path(__file__).resolve().parent.parent / "calculadora.py"
     runpy.run_path(str(ruta), run_name="__main__")
-    assert "Programa terminado." in capsys.readouterr().out
+    assert MENSAJE_SALIDA in capsys.readouterr().out
 
 
 # API.
+
 
 def test_api_estado():
     respuesta = cliente.get("/estado")
@@ -134,7 +143,7 @@ def test_api_estado():
 
 
 def test_api_promedio():
-    respuesta = cliente.post("/calcular", json={"operacion": "promedio", "numeros": [8, 9, 10]})
+    respuesta = calcular("promedio", [8, 9, 10])
     assert respuesta.status_code == 200
     assert respuesta.json()["resultado"] == 9
 
@@ -150,25 +159,25 @@ def test_api_promedio():
     ],
 )
 def test_api_operaciones(operacion, numeros, esperado):
-    respuesta = cliente.post("/calcular", json={"operacion": operacion, "numeros": numeros})
+    respuesta = calcular(operacion, numeros)
     assert respuesta.status_code == 200
     assert respuesta.json()["resultado"] == esperado
 
 
 def test_api_mayor_y_menor():
-    respuesta = cliente.post("/calcular", json={"operacion": "mayor y menor", "numeros": [3, -1, 7]})
+    respuesta = calcular("mayor y menor", [3, -1, 7])
     assert respuesta.status_code == 200
     assert respuesta.json()["resultado"] == {"mayor": 7, "menor": -1}
 
 
 def test_api_division_entre_cero():
-    respuesta = cliente.post("/calcular", json={"operacion": "división", "numeros": [1, 0]})
+    respuesta = calcular("división", [1, 0])
     assert respuesta.status_code == 400
     assert respuesta.json()["detail"] == "No se puede dividir entre cero."
 
 
 def test_api_operacion_desconocida():
-    respuesta = cliente.post("/calcular", json={"operacion": "raiz", "numeros": [4]})
+    respuesta = calcular("raiz", [4])
     assert respuesta.status_code == 400
     assert "Operación no válida" in respuesta.json()["detail"]
 
@@ -185,12 +194,12 @@ def test_api_operacion_desconocida():
     ],
 )
 def test_api_rechaza_datos_incorrectos(datos):
-    assert cliente.post("/calcular", json=datos).status_code == 422
+    assert cliente.post(RUTA_CALCULAR, json=datos).status_code == 422
 
 
 def test_api_rechaza_json_mal_formado():
     respuesta = cliente.post(
-        "/calcular", content="{no es json", headers={"Content-Type": "application/json"}
+        RUTA_CALCULAR, content="{no es json", headers={"Content-Type": "application/json"}
     )
     assert respuesta.status_code == 422
 

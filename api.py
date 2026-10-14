@@ -1,9 +1,20 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
-from calculadora import Calculadora
+from calculadora import MAYOR_Y_MENOR, Calculadora
 
-app = FastAPI(title="API de la calculadora", version="1.0.0")
+# Sin /docs ni /redoc: esas páginas cargan scripts externos que OWASP ZAP reportaría.
+# El esquema /openapi.json se conserva para que ZAP conozca las rutas de la API.
+app = FastAPI(title="API de la calculadora", version="1.0.0", docs_url=None, redoc_url=None)
+
+CABECERAS_DE_SEGURIDAD = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
+    "Cache-Control": "no-store",
+    "Cross-Origin-Resource-Policy": "same-origin",
+    "Referrer-Policy": "no-referrer",
+}
 
 
 class Peticion(BaseModel):
@@ -17,9 +28,7 @@ class Peticion(BaseModel):
 @app.middleware("http")
 async def cabeceras_de_seguridad(request, call_next):
     respuesta = await call_next(request)
-    respuesta.headers["X-Content-Type-Options"] = "nosniff"
-    respuesta.headers["X-Frame-Options"] = "DENY"
-    respuesta.headers["Cache-Control"] = "no-store"
+    respuesta.headers.update(CABECERAS_DE_SEGURIDAD)
     return respuesta
 
 
@@ -37,6 +46,6 @@ def calcular(peticion: Peticion):
     except (ZeroDivisionError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from None
 
-    if objeto.operacion == "mayor y menor":
+    if objeto.operacion == MAYOR_Y_MENOR:
         respuesta = {"mayor": respuesta[0], "menor": respuesta[1]}
     return {"operacion": objeto.operacion, "numeros": peticion.numeros, "resultado": respuesta}
