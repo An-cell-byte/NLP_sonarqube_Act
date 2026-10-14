@@ -17,12 +17,19 @@ ORDEN = {
     "potencia": "primero elevado al segundo",
 }
 
+# Nombres alternativos sin acentos, útiles al usar la API.
+SINONIMOS = {
+    "multiplicacion": "multiplicación",
+    "division": "división",
+    "mayor_y_menor": "mayor y menor",
+}
+
 
 # CLASE
 class Calculadora:
 
     def __init__(self, operacion, numeros):
-        self.operacion = operacion
+        self.operacion = SINONIMOS.get(operacion, operacion)
         self.numeros = numeros
 
     def suma(self):
@@ -35,39 +42,63 @@ class Calculadora:
         return math.prod(self.numeros)
 
     def division(self):
+        if self.numeros[1] == 0:
+            raise ZeroDivisionError("No se puede dividir entre cero.")
         return self.numeros[0] / self.numeros[1]
 
     def promedio(self):
         return sum(self.numeros) / len(self.numeros)
 
     def potencia(self):
-        return math.pow(self.numeros[0], self.numeros[1])
+        try:
+            return math.pow(self.numeros[0], self.numeros[1])
+        except (ValueError, OverflowError):
+            # Cero elevado a un negativo, raíz de un negativo o un resultado demasiado grande.
+            raise ValueError("No se puede calcular la potencia con esos valores.") from None
 
     def mayor_y_menor(self):
         return max(self.numeros), min(self.numeros)
 
+    def validar(self):
+        if self.operacion not in ORDEN and self.operacion not in OPERACIONES.values():
+            raise ValueError(f"Operación no válida: {self.operacion}.")
+        if not isinstance(self.numeros, (list, tuple)) or not self.numeros:
+            raise ValueError("Debes indicar al menos un número.")
+        for numero in self.numeros:
+            if isinstance(numero, bool) or not isinstance(numero, (int, float)):
+                raise ValueError(f"Valor no válido: {numero!r}. Solo se aceptan números.")
+            if not math.isfinite(numero):
+                raise ValueError("Los números deben ser finitos.")
+        if self.operacion in ORDEN and len(self.numeros) != 2:
+            raise ValueError(f"La operación {self.operacion} necesita exactamente dos números.")
+
     def resultado(self):
-        if self.operacion == "suma":
-            return self.suma()
-        elif self.operacion == "resta":
-            return self.resta()
-        elif self.operacion == "multiplicación":
-            return self.multiplicacion()
-        elif self.operacion == "división":
-            return self.division()
-        elif self.operacion == "promedio":
-            return self.promedio()
-        elif self.operacion == "potencia":
-            return self.potencia()
-        else:
-            return self.mayor_y_menor()
+        self.validar()
+        metodos = {
+            "suma": self.suma,
+            "resta": self.resta,
+            "multiplicación": self.multiplicacion,
+            "división": self.division,
+            "promedio": self.promedio,
+            "potencia": self.potencia,
+            "mayor y menor": self.mayor_y_menor,
+        }
+        respuesta = metodos[self.operacion]()
+        if not isinstance(respuesta, tuple) and not math.isfinite(respuesta):
+            raise ValueError("El resultado es demasiado grande para calcularlo.")
+        return respuesta
+
 
 def leer_numero(mensaje):
     while True:
         try:
-            return float(input(mensaje).replace(",", "."))
+            numero = float(input(mensaje).replace(",", "."))
         except ValueError:
             print("Valor no válido. Escribe un número, por ejemplo 8 o 3.5.")
+            continue
+        if math.isfinite(numero):
+            return numero
+        print("Valor no válido. Escribe un número finito.")
 
 
 def leer_cantidad():
@@ -85,21 +116,14 @@ def formato(numero):
     return numero
 
 
-while True:
+def mostrar_menu():
     print("\n===== CALCULADORA =====")
     for opcion, nombre in OPERACIONES.items():
         print(opcion + ".", nombre.capitalize())
     print("0. Salir")
-    opcion = input("Elige una opción: ").strip()
 
-    if opcion == "0":
-        print("Programa terminado.")
-        break
-    if opcion not in OPERACIONES:
-        print("Opción no válida. Elige un número del menú.")
-        continue
 
-    operacion = OPERACIONES[opcion]
+def realizar_operacion(operacion):
     print("Operación:", operacion)
 
     if operacion in ORDEN:
@@ -116,12 +140,31 @@ while True:
     objeto = Calculadora(operacion, numeros)
     try:
         respuesta = objeto.resultado()
-        if operacion == "mayor y menor":
-            print("Resultado: mayor =", formato(respuesta[0]), "y menor =", formato(respuesta[1]))
-        else:
-            print("Resultado:", formato(respuesta))
-    except ZeroDivisionError:
-        print("Error: no se puede dividir entre cero.")
-    except (ValueError, OverflowError):
-        # Cero elevado a un negativo o un resultado demasiado grande.
-        print("Error: no se puede calcular con esos valores.")
+    except (ZeroDivisionError, ValueError) as error:
+        print("Error:", error)
+        return
+    if operacion == "mayor y menor":
+        print("Resultado: mayor =", formato(respuesta[0]), "y menor =", formato(respuesta[1]))
+    else:
+        print("Resultado:", formato(respuesta))
+
+
+def main():
+    while True:
+        mostrar_menu()
+        try:
+            opcion = input("Elige una opción: ").strip()
+            if opcion == "0":
+                print("Programa terminado.")
+                break
+            if opcion not in OPERACIONES:
+                print("Opción no válida. Elige un número del menú.")
+                continue
+            realizar_operacion(OPERACIONES[opcion])
+        except (EOFError, KeyboardInterrupt):
+            print("\nPrograma terminado.")
+            break
+
+
+if __name__ == "__main__":
+    main()

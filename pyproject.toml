@@ -1,0 +1,28 @@
+[project]
+name = "calculadora"
+version = "1.0.0"
+description = "Calculadora orientada a objetos con pruebas automáticas y API"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["pruebas"]
+pythonpath = ["."]
+addopts = "-ra"
+
+[tool.coverage.run]
+# Mide todo el código Python del proyecto (calculadora, API y herramientas futuras).
+source = ["."]
+branch = true
+omit = [
+    "pruebas/*",
+    ".venv/*",
+]
+
+[tool.coverage.report]
+# Cobertura combinada de líneas y ramas.
+fail_under = 90
+show_missing = true
+skip_covered = false
+
+[tool.coverage.xml]
+output = "coverage.xml"
