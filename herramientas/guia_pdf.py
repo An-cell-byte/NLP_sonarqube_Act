@@ -126,7 +126,7 @@ def portada(lienzo):
     lienzo.drawString(48, 173, "Material de apoyo para trabajar en clase y por tu cuenta.")
     lienzo.drawString(48, 151, "Requisito: Python 3.12 o posterior.")
     lienzo.setFont("Helvetica", 8)
-    lienzo.drawString(48, 64, "PROYECTO CALCULADORA  ·  MATERIAL DE CLASE")
+    lienzo.drawString(48, 64, "TEAM4_PROJECT  ·  NLP_SONARQUBE_ACT  ·  MATERIAL DE CLASE")
 
 
 def marco(lienzo, documento):
@@ -269,7 +269,7 @@ def crear_guia(origen=Path("GUIA_ALUMNOS.md"), destino=Path("material/GUIA_ALUMN
         invariant=1,
         lang="es-MX",
         title="Guía para alumnos · Calculadora en Python",
-        author="Proyecto Calculadora",
+        author="team4_project",
         subject="Programación, pruebas y primeros pasos en DevOps",
     )
     documento.addPageTemplates(

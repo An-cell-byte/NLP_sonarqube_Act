@@ -91,6 +91,7 @@ def resumen(datos):
     metricas = datos["metrics"]
     return (
         "# Resumen de SonarQube\n\n"
+        f"- Proyecto: `{datos['project']}` (calculadora en Python con menú y API)\n"
         f"- Quality Gate: **{datos['quality_gate']['status']}**\n"
         f"- Cobertura de todo el proyecto: **{metricas.get('coverage', 'N/D')} %**\n"
         f"- Cobertura del código nuevo: **{metricas.get('new_coverage', 'N/D')} %**\n"

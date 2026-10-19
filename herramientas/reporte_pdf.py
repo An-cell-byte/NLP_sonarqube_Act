@@ -264,7 +264,7 @@ def marco(lienzo, documento):
     lienzo.drawString(44, A4[1] - 40, "SONARQUBE  /  CALIDAD DE SOFTWARE")
     lienzo.setFont("Helvetica", 8)
     lienzo.setFillColor(GRIS)
-    lienzo.drawRightString(A4[0] - 44, A4[1] - 40, "CALCULADORA · PYTHON")
+    lienzo.drawRightString(A4[0] - 44, A4[1] - 40, "TEAM4_PROJECT · CALCULADORA EN PYTHON")
     lienzo.setStrokeColor(BORDE)
     lienzo.line(44, 43, A4[0] - 44, 43)
     lienzo.setFont("Helvetica", 7.5)
@@ -319,7 +319,9 @@ def crear_pdf(datos, ruta):
         ),
         texto("Alcance del análisis", "seccion"),
         texto(
-            "La cobertura incluye calculadora.py, api.py y las herramientas de reporte. "
+            "Calculadora en Python con menú de consola y API HTTP (repositorio "
+            "NLP_sonarqube_Act). La cobertura incluye calculadora.py, api.py y las "
+            "herramientas de reporte. "
             "Los issues son hallazgos abiertos; los puntos de revisión de seguridad "
             "(hotspots) se contabilizan por separado.",
             "nota",
@@ -367,6 +369,6 @@ def crear_pdf(datos, ruta):
         topMargin=77,
         bottomMargin=62,
         title=f"Calidad y seguridad del código | {datos['project']}",
-        author="Calculadora · Integración continua",
+        author="team4_project · Integración continua",
         subject="Reporte de calidad SonarQube",
     ).build(contenido, onFirstPage=marco, onLaterPages=marco)
