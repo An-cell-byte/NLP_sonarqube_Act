@@ -1,36 +1,18 @@
-# Entorno virtual
-.venv/
-venv/
-env/
-
-# Credenciales y variables de entorno
-.env
-.env.*
-*.pem
-*.key
-credentials*.json
-
-# Cachés de Python y de las herramientas
 __pycache__/
 *.py[cod]
+.venv/
+venv/
+.env
+.env.*
 .pytest_cache/
 .ruff_cache/
-.mypy_cache/
-.scannerwork/
-.sonar/
-
-# Reportes temporales
-.coverage
-.coverage.*
+.coverage*
 coverage.xml
 htmlcov/
-reporte*/
-zap*.html
-zap*.json
+reports/
+.scannerwork/
 *.log
-
-# Editores y sistema operativo
-.vscode/
-.idea/
 .DS_Store
-Thumbs.db
+report_html.html
+report_json.json
+report_md.md

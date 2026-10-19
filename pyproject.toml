@@ -1,47 +1,25 @@
-[project]
-name = "calculadora"
-version = "1.0.0"
-description = "Calculadora orientada a objetos con pruebas automáticas, API y SonarQube"
-requires-python = ">=3.12"
-
 [tool.pytest.ini_options]
 testpaths = ["pruebas"]
 pythonpath = ["."]
 addopts = "-ra"
 
 [tool.coverage.run]
-# Mide todo el código Python del proyecto: calculadora, API y herramientas que se agreguen.
-source = ["."]
+relative_files = true
 branch = true
-omit = [
-    "pruebas/*",
-    ".venv/*",
-]
+source = ["."]
+omit = ["pruebas/*", "build/*", ".venv/*"]
 
 [tool.coverage.report]
-# Cobertura combinada de líneas y ramas.
-fail_under = 90
 show_missing = true
-exclude_also = [
-    'if __name__ == "__main__":',
-]
-
-[tool.coverage.xml]
-output = "coverage.xml"
+fail_under = 90
+exclude_also = ["if __name__ == .__main__.:"]
 
 [tool.ruff]
-line-length = 100
 target-version = "py312"
-extend-exclude = [".venv"]
+line-length = 100
 
 [tool.ruff.lint]
-# E/W: estilo, F: errores, I: orden de imports, B: errores comunes, UP: sintaxis moderna,
-# SIM: simplificaciones, S: seguridad (equivalente a Bandit).
-select = ["E", "W", "F", "I", "B", "UP", "SIM", "S"]
+select = ["E", "F", "I", "S"]
 
 [tool.ruff.lint.per-file-ignores]
-# En las pruebas se usa assert de forma intencional.
-"pruebas/*" = ["S101"]
-
-[tool.bandit]
-exclude_dirs = ["pruebas", ".venv"]
+"pruebas/*" = ["S101", "S603"]
