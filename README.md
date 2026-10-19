@@ -1,4 +1,4 @@
-# Calculadora en Python · team4_project
+# Calculadora en Python · team4_project 
 
 Actividad universitaria de calidad de software: una calculadora en Python con
 programación orientada a objetos, pruebas automáticas y un pipeline de
