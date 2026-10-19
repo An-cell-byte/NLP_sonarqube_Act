@@ -138,7 +138,7 @@ Guarda el secreto `SONAR_TOKEN` en **Settings → Secrets and variables →
 Actions**. Debe ser un User Token con permisos **Browse** y **Execute Analysis**
 sobre `team4_project`. La URL del servidor ya está definida en `ci.yml`.
 
-### Flujo de trabajo
+### Flujo de trabajo 
 
 1. Crea una rama, haz tus cambios y ejecuta `python -m pytest`.
 2. Haz push de la rama y abre un pull request hacia `main`.
