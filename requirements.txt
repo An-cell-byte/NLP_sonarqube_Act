@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 fastapi==0.143.1
 uvicorn==0.54.0
 httpx==0.28.1
@@ -9,3 +10,11 @@ pip-audit==2.10.1
 reportlab==5.0.1
 requests==2.34.2
 pypdf==6.20.1
+=======
+fastapi==0.141.1
+uvicorn==0.53.0
+httpx2==2.13.1
+pytest==9.1.1
+pytest-cov==7.1.0
+ruff==0.17.0
+>>>>>>> 5d4ad02d66fe57b6e6a8cadabb318b2067de4b63

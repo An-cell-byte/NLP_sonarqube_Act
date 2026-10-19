@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 name: Calidad y seguridad
 'on':
   push:
@@ -309,3 +310,287 @@ jobs:
         if fallos:
             raise SystemExit('Hay controles pendientes o fallidos: ' + ', '.join(fallos))
         PYTHON
+=======
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+  SONAR_HOST_URL: https://sonarqube.lynvera.ai
+
+jobs:
+  revision:
+    name: Revisión con Ruff
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+      - name: Revisar el código
+        run: python -m ruff check --output-format=github .
+      - name: Revisar el formato
+        run: python -m ruff format --check --diff .
+
+  unitarias:
+    name: Pruebas unitarias
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+      - name: Ejecutar pruebas unitarias
+        run: python -m pytest pruebas/test_calculadora.py -v
+
+  integracion:
+    name: Pruebas de integración (menú y API)
+    runs-on: ubuntu-latest
+    needs:
+      - unitarias
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+      - name: Ejecutar pruebas de integración
+        run: python -m pytest pruebas/test_integracion.py -v
+
+  cobertura:
+    name: Cobertura
+    runs-on: ubuntu-latest
+    needs:
+      - unitarias
+      - integracion
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+      - name: Ejecutar todas las pruebas con cobertura (mínimo 90 %)
+        run: python -m pytest --cov --cov-report=term-missing --cov-report=xml --cov-report=html
+      - name: Publicar resultados de cobertura
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cobertura
+          path: |
+            coverage.xml
+            htmlcov/
+          if-no-files-found: warn
+
+  secretos:
+    name: Secretos con Gitleaks
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: 8.30.1
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Instalar Gitleaks
+        run: |
+          curl -sSfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz gitleaks
+      - name: Buscar contraseñas y credenciales en el historial
+        run: ./gitleaks git --redact --verbose --report-format json --report-path gitleaks.json .
+      - name: Publicar resultado
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: gitleaks
+          path: gitleaks.json
+          if-no-files-found: ignore
+
+  seguridad:
+    name: Seguridad con Bandit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Instalar Bandit
+        run: python -m pip install bandit==1.9.4
+      - name: Revisar el código Python
+        run: bandit -c pyproject.toml -r .
+
+  dependencias:
+    name: Vulnerabilidades con pip-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Instalar pip-audit
+        run: python -m pip install pip-audit==2.10.1
+      - name: Buscar vulnerabilidades conocidas
+        run: pip-audit -r requirements.txt --strict --desc
+
+  obsoletas:
+    name: Bibliotecas obsoletas (informativo)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+      - name: Informar versiones más recientes
+        # Solo informa; nunca hace fallar la ejecución.
+        run: |
+          python -m pip list --outdated --format=columns | tee obsoletas.txt || true
+          {
+            echo "## Bibliotecas con versiones más recientes"
+            echo '```'
+            cat obsoletas.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  zap:
+    name: OWASP ZAP sobre la API
+    runs-on: ubuntu-latest
+    needs:
+      - integracion
+      - secretos
+      - seguridad
+      - dependencias
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+      - name: Instalar dependencias
+        run: python -m pip install -r requirements.txt
+      - name: Iniciar la API temporal
+        run: |
+          python -m uvicorn api:app --host 0.0.0.0 --port 8000 > uvicorn.log 2>&1 &
+          curl --silent --fail --retry 20 --retry-delay 1 --retry-connrefused http://localhost:8000/estado
+      - name: Revisar la API con OWASP ZAP
+        run: |
+          mkdir -p zap
+          chmod 777 zap
+          set +e
+          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+            zap-api-scan.py -t http://localhost:8000/openapi.json -f openapi \
+            -r zap.html -J zap.json -w zap.md
+          codigo=$?
+          set -e
+          cat zap/zap.md >> "$GITHUB_STEP_SUMMARY" || true
+          # 0 = sin alertas, 2 = solo advertencias; 1 = fallos y 3 = error de ZAP.
+          if [ "$codigo" -eq 1 ] || [ "$codigo" -eq 3 ]; then
+            echo "::error::ZAP terminó con código $codigo."
+            exit 1
+          fi
+          # Las alertas de riesgo medio o alto impiden aprobar.
+          graves=$(jq '[.site[]?.alerts[]? | select((.riskcode | tonumber) >= 2)] | length' zap/zap.json)
+          echo "Alertas de riesgo medio o alto: $graves"
+          if [ "$graves" -gt 0 ]; then
+            echo "::error::ZAP encontró $graves alertas de riesgo medio o alto."
+            exit 1
+          fi
+      - name: Publicar reporte de ZAP
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: zap
+          path: |
+            zap/
+            uvicorn.log
+          if-no-files-found: ignore
+
+  sonarqube:
+    name: Análisis en SonarQube
+    runs-on: ubuntu-latest
+    # SonarQube solo analiza main; en los pull requests este job aparece omitido.
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs:
+      - cobertura
+      - revision
+      - secretos
+      - seguridad
+      - dependencias
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Descargar resultados de cobertura
+        uses: actions/download-artifact@v8
+        with:
+          name: cobertura
+      - name: Analizar el código e importar la cobertura
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ env.SONAR_HOST_URL }}
+        with:
+          # Espera el resultado del Quality Gate y falla si no aprueba.
+          args: >
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+
+  resumen:
+    name: Resumen
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      - revision
+      - unitarias
+      - integracion
+      - cobertura
+      - secretos
+      - seguridad
+      - dependencias
+      - obsoletas
+      - zap
+      - sonarqube
+    steps:
+      - name: Mostrar el estado de los controles
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          {
+            echo "## Resumen de controles"
+            echo ""
+            echo "| Control | Resultado |"
+            echo "| --- | --- |"
+            echo "$NEEDS" | jq -r 'to_entries[] | "| \(.key) | \(.value.result) |"'
+            echo ""
+            echo "_obsoletas es informativo. sonarqube se omite en los pull requests._"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "$NEEDS" | jq -r 'to_entries[] | "\(.key): \(.value.result)"'
+          fallidos=$(echo "$NEEDS" | jq -r '[to_entries[] | select(.key != "obsoletas") | select(.value.result == "failure" or .value.result == "cancelled") | .key] | join(", ")')
+          if [ -n "$fallidos" ]; then
+            echo "::error::Controles que no aprobaron: $fallidos"
+            exit 1
+          fi
+>>>>>>> 5d4ad02d66fe57b6e6a8cadabb318b2067de4b63
