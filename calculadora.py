@@ -1,26 +1,8 @@
 import math
 
-OPERACIONES = {
-    "1": "suma",
-    "2": "resta",
-    "3": "multiplicación",
-    "4": "división",
-    "5": "promedio",
-    "6": "potencia",
-    "7": "mayor y menor",
-}
-
-# Operaciones que usan dos números y el orden en que se aplican.
-ORDEN = {
-    "resta": "primero menos segundo",
-    "división": "primero entre segundo",
-    "potencia": "primero elevado al segundo",
-}
-
 
 # CLASE
 class Calculadora:
-
     def __init__(self, operacion, numeros):
         self.operacion = operacion
         self.numeros = numeros
@@ -62,6 +44,7 @@ class Calculadora:
         else:
             return self.mayor_y_menor()
 
+
 def leer_numero(mensaje):
     while True:
         try:
@@ -85,43 +68,67 @@ def formato(numero):
     return numero
 
 
-while True:
-    print("\n===== CALCULADORA =====")
-    for opcion, nombre in OPERACIONES.items():
-        print(opcion + ".", nombre.capitalize())
-    print("0. Salir")
-    opcion = input("Elige una opción: ").strip()
+def main():
 
-    if opcion == "0":
-        print("Programa terminado.")
-        break
-    if opcion not in OPERACIONES:
-        print("Opción no válida. Elige un número del menú.")
-        continue
+    OPERACIONES = {
+        "1": "suma",
+        "2": "resta",
+        "3": "multiplicación",
+        "4": "división",
+        "5": "promedio",
+        "6": "potencia",
+        "7": "mayor y menor",
+    }
 
-    operacion = OPERACIONES[opcion]
-    print("Operación:", operacion)
+    # Operaciones que usan dos números y el orden en que se aplican.
+    ORDEN = {
+        "resta": "primero menos segundo",
+        "división": "primero entre segundo",
+        "potencia": "primero elevado al segundo",
+    }
 
-    if operacion in ORDEN:
-        print("Orden:", ORDEN[operacion])
-        cantidad = 2
-    else:
-        cantidad = leer_cantidad()
+    while True:
+        print("\n===== CALCULADORA =====")
+        for opcion, nombre in OPERACIONES.items():
+            print(opcion + ".", nombre.capitalize())
+        print("0. Salir")
+        opcion = input("Elige una opción: ").strip()
 
-    numeros = []
-    for i in range(cantidad):
-        numeros.append(leer_numero(f"Número {i + 1}: "))
+        if opcion == "0":
+            print("Programa terminado.")
+            break
+        if opcion not in OPERACIONES:
+            print("Opción no válida. Elige un número del menú.")
+            continue
 
-    # OBJETO
-    objeto = Calculadora(operacion, numeros)
-    try:
-        respuesta = objeto.resultado()
-        if operacion == "mayor y menor":
-            print("Resultado: mayor =", formato(respuesta[0]), "y menor =", formato(respuesta[1]))
+        operacion = OPERACIONES[opcion]
+        print("Operación:", operacion)
+
+        if operacion in ORDEN:
+            print("Orden:", ORDEN[operacion])
+            cantidad = 2
         else:
-            print("Resultado:", formato(respuesta))
-    except ZeroDivisionError:
-        print("Error: no se puede dividir entre cero.")
-    except (ValueError, OverflowError):
-        # Cero elevado a un negativo o un resultado demasiado grande.
-        print("Error: no se puede calcular con esos valores.")
+            cantidad = leer_cantidad()
+
+        numeros = []
+        for i in range(cantidad):
+            numeros.append(leer_numero(f"Número {i + 1}: "))
+
+        objeto = Calculadora(operacion, numeros)
+        try:
+            respuesta = objeto.resultado()
+            if operacion == "mayor y menor":
+                print(
+                    "Resultado: mayor =", formato(respuesta[0]), "y menor =", formato(respuesta[1])
+                )
+            else:
+                print("Resultado:", formato(respuesta))
+        except ZeroDivisionError:
+            print("Error: no se puede dividir entre cero.")
+        except (ValueError, OverflowError):
+            # Cero elevado a un negativo o un resultado demasiado grande.
+            print("Error: no se puede calcular con esos valores.")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,25 @@
+[tool.pytest.ini_options]
+testpaths = ["pruebas"]
+pythonpath = ["."]
+addopts = "-ra"
+
+[tool.coverage.run]
+relative_files = true
+branch = true
+source = ["."]
+omit = ["pruebas/*", "build/*", ".venv/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 90
+exclude_also = ["if __name__ == .__main__.:"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"pruebas/*" = ["S101", "S603"]
